@@ -1,0 +1,76 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rl_NewTag"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scrollbars="none"
+    android:background="#EF367EC6"
+    tools:context=".ContactManager">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="25dp">
+
+
+        <ImageView
+
+            android:id="@+id/header_text_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="fitXY"
+            android:src="@drawable/texttag"/>
+
+
+        </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="25dp"
+        android:paddingRight="25dp"
+        android:paddingTop="150dp"
+        android:paddingBottom="115dp"
+        android:layout_alignParentTop="true">
+
+        <ListView
+
+            android:id="@+id/list"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#ffffff"
+            android:paddingTop="30dp"
+            android:padding="15dp"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:scrollbars="none"
+            android:cacheColorHint="@android:color/transparent"/>
+
+
+        </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="45dp"
+        android:layout_alignParentBottom="true">
+
+        <Button
+
+            android:id="@+id/btn_send_tag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="25dp"
+            android:text="Send Tag"
+            android:layout_centerHorizontal="true"/>
+
+        </RelativeLayout>
+
+
+
+</RelativeLayout>
+
