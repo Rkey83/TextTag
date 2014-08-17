@@ -18,13 +18,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -35,7 +33,7 @@ public class DbService extends IntentService {
     private static final String readFromDb = "com.locallygrownstudios.texttag.action.READ_FROM_DB";
 
     int code;
-    String result = null, line = null, thisCountry;
+    String result = null, line = null, thisCountry, thisAdminArea;
     InputStream is;
     Long currentTime;
 
@@ -87,14 +85,8 @@ public class DbService extends IntentService {
         String Time = currentTime.toString();
         ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 
-        nameValuePairs.add(new BasicNameValuePair("CountriesTagged", "1"));
-        getLocation();
-        if (thisCountry.contains("United States")) {
-            nameValuePairs.add(new BasicNameValuePair("StatesTagged", "1"));
-        }
-        else{
-            nameValuePairs.add(new BasicNameValuePair("StatesTagged", "0"));
-        }
+        nameValuePairs.add(new BasicNameValuePair("CountriesTagged", "0"));
+        nameValuePairs.add(new BasicNameValuePair("StatesTagged", "0"));
         nameValuePairs.add(new BasicNameValuePair("PeopleTagged", "1"));
         nameValuePairs.add(new BasicNameValuePair("TimeAlive", "0"));
         nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
@@ -116,7 +108,7 @@ public class DbService extends IntentService {
             BufferedReader reader = new BufferedReader (new InputStreamReader (is, "iso-8859-1"), 16);
             StringBuilder sb = new StringBuilder();
             while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
             is.close();
             result = sb.toString();
@@ -226,9 +218,19 @@ public class DbService extends IntentService {
                 if (null != listAddresses && listAddresses.size() > 0) {
                     String thisLocation = listAddresses.get(0).getAddressLine(0);
                     thisCountry = listAddresses.get(0).getCountryName();
+                    if(thisCountry.contains("United States")) {
+
+                        thisAdminArea = listAddresses.get(0).getAdminArea();
+                    }
+                    else{
+                        thisAdminArea = null;
+                    }
+
                     Log.e("Location", thisLocation );
                     Log.e("Location", thisCountry );
+                    Log.e("Location", thisAdminArea );
                 }
+
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.e("Location", "Location Failed" );
