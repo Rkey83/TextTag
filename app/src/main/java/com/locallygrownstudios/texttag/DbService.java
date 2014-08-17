@@ -3,9 +3,12 @@ package com.locallygrownstudios.texttag;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.location.Address;
+import android.location.Criteria;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.util.Log;
-import android.widget.Button;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -17,10 +20,13 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 
 public class DbService extends IntentService {
@@ -29,9 +35,8 @@ public class DbService extends IntentService {
     private static final String readFromDb = "com.locallygrownstudios.texttag.action.READ_FROM_DB";
 
     int code;
-    String result = null, line = null;
+    String result = null, line = null, thisCountry;
     InputStream is;
-    Date timeSent;
     Long currentTime;
 
 
@@ -82,7 +87,15 @@ public class DbService extends IntentService {
         String Time = currentTime.toString();
         ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 
-
+        nameValuePairs.add(new BasicNameValuePair("CountriesTagged", "1"));
+        getLocation();
+        if (thisCountry.contains("United States")) {
+            nameValuePairs.add(new BasicNameValuePair("StatesTagged", "1"));
+        }
+        else{
+            nameValuePairs.add(new BasicNameValuePair("StatesTagged", "0"));
+        }
+        nameValuePairs.add(new BasicNameValuePair("PeopleTagged", "1"));
         nameValuePairs.add(new BasicNameValuePair("TimeAlive", "0"));
         nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
         nameValuePairs.add(new BasicNameValuePair("_id",null));
@@ -193,4 +206,35 @@ public class DbService extends IntentService {
             Log.e("Fail 3", e.toString());
         }
     }
+
+
+    private void getLocation() {
+
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        String provider = locationManager.getBestProvider(new Criteria(), true);
+
+        Location locations = locationManager.getLastKnownLocation(provider);
+        List<String> providerList = locationManager.getAllProviders();
+
+        if (null != locations && null != providerList && providerList.size() > 0) {
+
+            double longitude = locations.getLongitude();
+            double latitude = locations.getLatitude();
+            Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+            try {
+                List<Address> listAddresses = geocoder.getFromLocation(latitude, longitude, 1);
+                if (null != listAddresses && listAddresses.size() > 0) {
+                    String thisLocation = listAddresses.get(0).getAddressLine(0);
+                    thisCountry = listAddresses.get(0).getCountryName();
+                    Log.e("Location", thisLocation );
+                    Log.e("Location", thisCountry );
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e("Location", "Location Failed" );
+            }
+
+        }
+    }
+
 }
