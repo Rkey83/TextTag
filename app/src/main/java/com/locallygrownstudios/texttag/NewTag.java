@@ -40,6 +40,7 @@ public class NewTag extends Activity implements View.OnClickListener{
 
     }
 
+
     public void getContacts() {
 
         int currentPosition;
@@ -107,13 +108,11 @@ public class NewTag extends Activity implements View.OnClickListener{
     }
 
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.new_tag, menu);
         return true;
     }
-
 
 
     @Override
