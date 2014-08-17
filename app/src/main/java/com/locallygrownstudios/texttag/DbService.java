@@ -44,15 +44,18 @@ public class DbService extends IntentService {
         context.startService(intent);
     }
 
+
     public static void readFromDb(Context context) {
         Intent intent = new Intent(context, DbService.class);
         intent.setAction(readFromDb);
         context.startService(intent);
     }
 
+
     public DbService() {
         super("DbService");
     }
+
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -66,10 +69,10 @@ public class DbService extends IntentService {
         }
     }
 
+
     private void handleWriteToDb() {
 
         insertDB();
-      //  updateDB();
 
     }
 
@@ -134,9 +137,7 @@ public class DbService extends IntentService {
     }
 
 
-
-    public void updateDB()
-    {
+    public void updateDB() {
 
         currentTime = System.currentTimeMillis();
         String Time = currentTime.toString();

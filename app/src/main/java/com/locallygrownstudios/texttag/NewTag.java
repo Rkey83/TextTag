@@ -48,7 +48,8 @@ public class NewTag extends Activity implements View.OnClickListener{
 
             NewTagBean newTagBean = new NewTagBean();
             Cursor cursor = getContentResolver().query(Phone.CONTENT_URI, null, null, null, null);
-            currentPosition = Helpers.randInt(0, cursor.getCount() - 1 );
+            currentPosition = Helpers.randInt(0, cursor.getCount() - 1
+            );
             cursor.moveToPosition(currentPosition);
 
             if (currentPosition != position1 && currentPosition != position2 && currentPosition != position3 && currentPosition != position4 && currentPosition != position5) {
@@ -75,13 +76,10 @@ public class NewTag extends Activity implements View.OnClickListener{
                         contactNumber = Helpers.stripNumberFormatiing(contactNumber);
                         newTagBean.PhoneNoset(Helpers.formatPhoneNumber(contactNumber));
                         list.add(newTagBean);
+
                     }
                 }
-                else {
-                    i--;
-                }
             }
-
             else {
                 i--;
             }
