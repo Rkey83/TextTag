@@ -76,19 +76,23 @@ public class NewTag extends Activity implements View.OnClickListener{
                         contactNumber = Helpers.stripNumberFormatiing(contactNumber);
                         newTagBean.PhoneNoset(Helpers.formatPhoneNumber(contactNumber));
                         list.add(newTagBean);
-
+                        position5 = position4;
+                        position4 = position3;
+                        position3 = position2;
+                        position2 = position1;
+                        position1 = currentPosition;
                     }
+                    else {
+                        i--;
+                    }
+                }
+                else {
+                    i--;
                 }
             }
             else {
                 i--;
             }
-
-            position5 = position4;
-            position4 = position3;
-            position3 = position2;
-            position2 = position1;
-            position1 = currentPosition;
 
         }
 
