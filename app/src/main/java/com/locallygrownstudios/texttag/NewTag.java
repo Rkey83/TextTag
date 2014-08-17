@@ -40,7 +40,6 @@ public class NewTag extends Activity implements View.OnClickListener{
 
     }
 
-
     public void getContacts() {
 
         int currentPosition;
