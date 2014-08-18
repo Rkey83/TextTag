@@ -29,27 +29,19 @@ import java.util.Locale;
 
 public class DbService extends IntentService {
 
-    private static final String writeToDb = "com.locallygrownstudios.texttag.action.WRITE_TO_DB";
+    private static final String writeToTags = "com.locallygrownstudios.texttag.action.WRITE_TO_TAGS";
+    private static final String writeToUsers = "com.locallygrownstudios.texttag.action.WRITE_TO_USERS";
     private static final String readFromDb = "com.locallygrownstudios.texttag.action.READ_FROM_DB";
 
+
+    private static final String EXTRA_SELECTED_NUMBER = "com.locallygrownstudios.texttag.extra.SELECTED_NUMBER";
+    private static final String EXTRA_REGID = "com.locallygrownstudios.texttag.extra.REGID";
+
+
     int code;
-    String result = null, line = null, thisCountry, thisAdminArea;
+    String result = null, line = null, thisCountry, thisAdminArea, selectedNumber, regID;
     InputStream is;
     Long currentTime;
-
-
-    public static void writeToDb(Context context) {
-        Intent intent = new Intent(context, DbService.class);
-        intent.setAction(writeToDb);
-        context.startService(intent);
-    }
-
-
-    public static void readFromDb(Context context) {
-        Intent intent = new Intent(context, DbService.class);
-        intent.setAction(readFromDb);
-        context.startService(intent);
-    }
 
 
     public DbService() {
@@ -57,22 +49,80 @@ public class DbService extends IntentService {
     }
 
 
+    public static void writeToTags(Context context) {
+        Intent intent = new Intent(context, DbService.class);
+        intent.setAction(writeToTags);
+        context.startService(intent);
+    }
+
+
+    public static void writeToUsers(Context context, String selectedNumber, String regID) {
+
+        Intent intent = new Intent(context, DbService.class);
+        intent.setAction(writeToUsers);
+        intent.putExtra(EXTRA_SELECTED_NUMBER,selectedNumber);
+        intent.putExtra(EXTRA_REGID, regID);
+        context.startService(intent);
+    }
+
+
+
+    public static void readFromUsers(Context context) {
+
+        Intent intent = new Intent(context, DbService.class);
+        intent.setAction(readFromDb);
+        context.startService(intent);
+
+    }
+
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
+
             final String action = intent.getAction();
-            if (writeToDb.equals(action)) {
-                handleWriteToDb();
-            } else if (readFromDb.equals(action)) {
-                handleReadFromDb();
+
+            if (writeToTags.equals(action)) {
+
+                handleWriteToTags();
+
+            } else if (writeToUsers.equals(action)) {
+
+                final String selectedNumber = intent.getStringExtra(EXTRA_SELECTED_NUMBER);
+                final String regID = intent.getStringExtra(EXTRA_REGID);
+                handleWriteToUsers(selectedNumber, regID);
+
             }
         }
     }
 
 
-    private void handleWriteToDb() {
+    private void handleWriteToTags() {
 
-        insertDB();
+        HttpPost httpPost = new HttpPost("http://locallygrownstudios.com/webservice/insert_tagdetails.php");
+        currentTime = System.currentTimeMillis();
+        String Time = currentTime.toString();
+        ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+        nameValuePairs.add(new BasicNameValuePair("CountriesTagged", "0"));
+        nameValuePairs.add(new BasicNameValuePair("StatesTagged", "0"));
+        nameValuePairs.add(new BasicNameValuePair("PeopleTagged", "1"));
+        nameValuePairs.add(new BasicNameValuePair("TimeAlive", "0"));
+        nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
+        nameValuePairs.add(new BasicNameValuePair("_id",null));
+
+        insertDB(httpPost, nameValuePairs);
+
+    }
+
+
+    private void handleWriteToUsers(String selectedNumber, String regID) {
+
+        HttpPost httpPost = new HttpPost("http://locallygrownstudios.com/webservice/insert_userdetails.php");
+        ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+        nameValuePairs.add(new BasicNameValuePair("PhoneNumber", selectedNumber));
+        nameValuePairs.add(new BasicNameValuePair("GCMKey", regID));
+
+        insertDB(httpPost, nameValuePairs);
 
     }
 
@@ -82,42 +132,38 @@ public class DbService extends IntentService {
     }
 
 
-    public void insertDB() {
-
-        currentTime = System.currentTimeMillis();
-        String Time = currentTime.toString();
-        ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-
-        nameValuePairs.add(new BasicNameValuePair("CountriesTagged", "0"));
-        nameValuePairs.add(new BasicNameValuePair("StatesTagged", "0"));
-        nameValuePairs.add(new BasicNameValuePair("PeopleTagged", "1"));
-        nameValuePairs.add(new BasicNameValuePair("TimeAlive", "0"));
-        nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
-        nameValuePairs.add(new BasicNameValuePair("_id",null));
+    public void insertDB(HttpPost httppost, ArrayList<NameValuePair> nameValuePairs) {
 
         try {
             HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost("http://locallygrownstudios.com/webservice/insert_tagdetails.php");
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
             HttpResponse response = httpclient.execute(httppost);
             HttpEntity entity = response.getEntity();
             is = entity.getContent();
             Log.e("pass 1", "connection success ");
+
         } catch (Exception e) {
+
             Log.e("Fail 1", e.toString());
         }
 
         try {
+
             BufferedReader reader = new BufferedReader (new InputStreamReader (is, "iso-8859-1"), 16);
             StringBuilder sb = new StringBuilder();
+
             while ((line = reader.readLine()) != null) {
                 sb.append(line).append("\n");
             }
+
             is.close();
             result = sb.toString();
             Log.e("pass 2", "connection success ");
+
         } catch (Exception e) {
+
             Log.e("Fail 2", e.toString());
+
         }
 
         try {
