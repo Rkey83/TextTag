@@ -1,13 +1,17 @@
 package com.locallygrownstudios.texttag;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
@@ -42,6 +46,8 @@ public class NewTag extends Activity implements View.OnClickListener{
     AtomicInteger msgId = new AtomicInteger();
     static Context context;
 
+
+    public UserDataReceiver userDataReceiver;
     private List<NewTagBean> list = new ArrayList<NewTagBean>();
     final static int listSize = 5;
     int position1 = -1, position2 = -1, position3 = -1, position4 = -1, position5 = -1;
@@ -73,6 +79,11 @@ public class NewTag extends Activity implements View.OnClickListener{
         listView.setAdapter(adapter);
         listView.setItemChecked(0, true);
         context = getApplicationContext();
+
+        IntentFilter intentFilter = new IntentFilter(UserDataReceiver.GET_USER_DATA);
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        userDataReceiver = new UserDataReceiver();
+        registerReceiver(userDataReceiver, intentFilter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -347,6 +358,7 @@ public class NewTag extends Activity implements View.OnClickListener{
     public void onClick(View v) {
 
         DbService.writeToTags(this);
+
         new AsyncTask<Void, Void, String>() {
 
             @Override
@@ -355,8 +367,6 @@ public class NewTag extends Activity implements View.OnClickListener{
 
                 try {
 
-
-
                     Bundle data = new Bundle();
                     data.putString("my_message", "Hello World");
                     data.putString("my_action", "com.google.android.gcm.demo.app.ECHO_NOW");
@@ -364,6 +374,7 @@ public class NewTag extends Activity implements View.OnClickListener{
                     gcm.send(SENDER_ID + "@gcm.googleapis.com:5236", id, data);
                     msg = "Sent message";
 
+                    DbService.readFromUsers(context, selectedNumber);
 
                 } catch (IOException ex) {
                     msg = "Error :" + ex.getMessage();
@@ -397,4 +408,21 @@ public class NewTag extends Activity implements View.OnClickListener{
         }
         return super.onOptionsItemSelected(item);
     }
+
+
+    public class UserDataReceiver extends BroadcastReceiver {
+
+        public static final String GET_USER_DATA = "com.locallygrownstudios.texttag.action.READ_FROM_USERS  ";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+
+            String thisthis = "ThisThis";
+
+
+        }
+    }
+
+
 }

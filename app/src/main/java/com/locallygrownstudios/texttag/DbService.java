@@ -9,6 +9,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.util.Log;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -17,7 +18,9 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,15 +34,16 @@ public class DbService extends IntentService {
 
     private static final String writeToTags = "com.locallygrownstudios.texttag.action.WRITE_TO_TAGS";
     private static final String writeToUsers = "com.locallygrownstudios.texttag.action.WRITE_TO_USERS";
-    private static final String readFromDb = "com.locallygrownstudios.texttag.action.READ_FROM_DB";
+    private static final String readFromUsers = "com.locallygrownstudios.texttag.action.READ_FROM_USERS";
 
 
-    private static final String EXTRA_SELECTED_NUMBER = "com.locallygrownstudios.texttag.extra.SELECTED_NUMBER";
+    private static final String EXTRA_USER_NUMBER = "com.locallygrownstudios.texttag.extra.USER_NUMBER";
+    private static final String EXTRA_TAGGED_NUMBER = "com.locallygrownstudios.texttag.extra.TAGGED_NUMBER";
     private static final String EXTRA_REGID = "com.locallygrownstudios.texttag.extra.REGID";
 
 
     int code;
-    String result = null, line = null, thisCountry, thisAdminArea, selectedNumber, regID;
+    String result = null, line = null,  thisCountry, thisAdminArea;
     InputStream is;
     Long currentTime;
 
@@ -56,23 +60,22 @@ public class DbService extends IntentService {
     }
 
 
-    public static void writeToUsers(Context context, String selectedNumber, String regID) {
+    public static void writeToUsers(Context context, String userNumber, String regID) {
 
         Intent intent = new Intent(context, DbService.class);
         intent.setAction(writeToUsers);
-        intent.putExtra(EXTRA_SELECTED_NUMBER,selectedNumber);
+        intent.putExtra(EXTRA_USER_NUMBER, userNumber);
         intent.putExtra(EXTRA_REGID, regID);
         context.startService(intent);
     }
 
 
-
-    public static void readFromUsers(Context context) {
+    public static void readFromUsers(Context context, String taggedNumber) {
 
         Intent intent = new Intent(context, DbService.class);
-        intent.setAction(readFromDb);
+        intent.setAction(readFromUsers);
+        intent.putExtra(EXTRA_TAGGED_NUMBER, taggedNumber);
         context.startService(intent);
-
     }
 
 
@@ -88,10 +91,14 @@ public class DbService extends IntentService {
 
             } else if (writeToUsers.equals(action)) {
 
-                final String selectedNumber = intent.getStringExtra(EXTRA_SELECTED_NUMBER);
+                final String userNumber = intent.getStringExtra(EXTRA_USER_NUMBER);
                 final String regID = intent.getStringExtra(EXTRA_REGID);
-                handleWriteToUsers(selectedNumber, regID);
+                handleWriteToUsers(userNumber, regID);
 
+            } else if (readFromUsers.equals(action)) {
+
+                final String taggedNumber = intent.getStringExtra(EXTRA_TAGGED_NUMBER);
+                handleReadFromUsers(taggedNumber);
             }
         }
     }
@@ -108,7 +115,7 @@ public class DbService extends IntentService {
         nameValuePairs.add(new BasicNameValuePair("PeopleTagged", "1"));
         nameValuePairs.add(new BasicNameValuePair("TimeAlive", "0"));
         nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
-        nameValuePairs.add(new BasicNameValuePair("_id",null));
+        nameValuePairs.add(new BasicNameValuePair("_id", null));
 
         insertDB(httpPost, nameValuePairs);
 
@@ -127,8 +134,21 @@ public class DbService extends IntentService {
     }
 
 
-    private void handleReadFromDb() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    private void handleReadFromUsers(String taggedNumber) {
+
+        taggedNumber = "6123662750";
+        HttpPost httpost = new HttpPost("http://locallygrownstudios.com/webservice/select_userdetails.php");
+        ArrayList<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+        nameValuePairs.add(new BasicNameValuePair("PhoneNumber", taggedNumber));
+
+        checkForTaggedGCM(httpost, nameValuePairs);
+
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(NewTag.UserDataReceiver.GET_USER_DATA);
+        broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        sendBroadcast(broadcastIntent);
+
+
     }
 
 
@@ -149,7 +169,7 @@ public class DbService extends IntentService {
 
         try {
 
-            BufferedReader reader = new BufferedReader (new InputStreamReader (is, "iso-8859-1"), 16);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 16);
             StringBuilder sb = new StringBuilder();
 
             while ((line = reader.readLine()) != null) {
@@ -173,13 +193,80 @@ public class DbService extends IntentService {
 
             if (code == 1) {
                 Log.e("pass 3", "connection success ");
-            }
-            else {
+            } else {
                 Log.e("fail 3", "connection fail ");
             }
         } catch (Exception e) {
             Log.e("Fail 3", e.toString());
         }
+    }
+
+
+    public String checkForTaggedGCM(HttpPost httpPost, ArrayList<NameValuePair> nameValuePairs){
+
+        String GCMKey = "Placeholder";
+
+        try {
+
+            HttpClient httpClient = new DefaultHttpClient();
+            httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+            HttpResponse response = httpClient.execute(httpPost);
+            HttpEntity entity = response.getEntity();
+            is = entity.getContent();
+            Log.e( "Pass 1" , "connection success");
+
+        }
+        catch (Exception e){
+
+            Log.e( "Fail 1" , "Error in Connection " + e.toString());
+
+        }
+
+        try {
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 16);
+            StringBuilder stringBuilder = new StringBuilder();
+
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line).append("\n");
+
+            }
+
+            is.close();
+            result = stringBuilder.toString();
+            Log.e( "Pass 2" , "Result Converted");
+
+        }
+        catch (Exception e){
+
+            Log.e( "Fail 2" , "Error Converting Result " + e.toString());
+
+        }
+
+
+        try {
+
+
+            JSONArray jsonArray = new JSONArray(result);
+            jsonArray.length();
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                Log.e("Pass 3", jsonObject.getString("GCMKey"));
+
+            }
+        }
+
+
+        catch (Exception e){
+
+            Log.e( "Fail 3" , "Error Parsing Data " + e.toString());
+
+        }
+
+
+        return GCMKey;
     }
 
 
@@ -191,10 +278,9 @@ public class DbService extends IntentService {
 
         nameValuePairs.add(new BasicNameValuePair("TimeAlive", "This is just a test"));
         nameValuePairs.add(new BasicNameValuePair("TimeSent", Time));
-        nameValuePairs.add(new BasicNameValuePair("_id",null));
+        nameValuePairs.add(new BasicNameValuePair("_id", null));
 
-        try
-        {
+        try {
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost("http://locallygrownstudios.com/webservice/update_tagdetails.php");
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
@@ -202,46 +288,34 @@ public class DbService extends IntentService {
             HttpEntity entity = response.getEntity();
             is = entity.getContent();
             Log.e("pass 1", "connection success ");
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             Log.e("Fail 1", e.toString());
         }
 
-        try
-        {
+        try {
             BufferedReader reader = new BufferedReader
-                    (new InputStreamReader(is,"iso-8859-1"),8);
+                    (new InputStreamReader(is, "iso-8859-1"), 8);
             StringBuilder sb = new StringBuilder();
-            while ((line = reader.readLine()) != null)
-            {
+            while ((line = reader.readLine()) != null) {
                 sb.append(line + "\n");
             }
             is.close();
             result = sb.toString();
             Log.e("pass 2", "connection success ");
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             Log.e("Fail 2", e.toString());
         }
 
-        try
-        {
+        try {
             JSONObject json_data = new JSONObject(result);
-            code=(json_data.getInt("code"));
+            code = (json_data.getInt("code"));
 
-            if(code==1)
-            {
+            if (code == 1) {
                 Log.e("pass 3", "connection success ");
+            } else {
+                Log.e("Fail 3", "connection fail ");
             }
-            else
-            {
-                Log.e("Fail 3", "connection fail " );
-            }
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             Log.e("Fail 3", e.toString());
         }
     }
@@ -265,22 +339,21 @@ public class DbService extends IntentService {
                 if (null != listAddresses && listAddresses.size() > 0) {
                     String thisLocation = listAddresses.get(0).getAddressLine(0);
                     thisCountry = listAddresses.get(0).getCountryName();
-                    if(thisCountry.contains("United States")) {
+                    if (thisCountry.contains("United States")) {
 
                         thisAdminArea = listAddresses.get(0).getAdminArea();
-                    }
-                    else{
+                    } else {
                         thisAdminArea = null;
                     }
 
-                    Log.e("Location", thisLocation );
-                    Log.e("Location", thisCountry );
-                    Log.e("Location", thisAdminArea );
+                    Log.e("Location", thisLocation);
+                    Log.e("Location", thisCountry);
+                    Log.e("Location", thisAdminArea);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.e("Location", "Location Failed" );
+                Log.e("Location", "Location Failed");
             }
 
         }
